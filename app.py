@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from sklearn.linear_model import LinearRegression # NEW
+import numpy as np # NEW
 
 #Config
 st.set_page_config(page_title="Retail Analytics", layout="wide")
@@ -66,3 +68,59 @@ with chart_col2:
 #Raw Data Table
 st.markdown("### Raw Data View")
 st.dataframe(df_selection)
+
+st.markdown("---")
+st.markdown("### 🤖 AI Demand Forecasting (Machine Learning)")
+
+# 1. Feature Engineering: Prepare Data for the ML Model
+df["Date"] = pd.to_datetime(df["Date"])
+daily_sales = df.groupby("Date")["Total"].sum().reset_index()
+
+# Create a 'Day Index' (e.g., 1, 2, 3...) to represent time passing
+daily_sales["Day_Index"] = np.arange(len(daily_sales))
+
+X = daily_sales[["Day_Index"]] # Features
+y = daily_sales["Total"]       # Target Variable
+
+# 2. Train the Machine Learning Model
+model = LinearRegression()
+model.fit(X, y)
+
+# 3. Predict the Next 7 Days
+last_day_index = daily_sales["Day_Index"].max()
+last_date = daily_sales["Date"].max()
+
+# Create future data points
+future_days = pd.DataFrame({"Day_Index": np.arange(last_day_index + 1, last_day_index + 8)})
+predictions = model.predict(future_days)
+
+# Create a DataFrame for the predictions
+future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=7)
+forecast_df = pd.DataFrame({
+    "Date": future_dates,
+    "Total": predictions,
+    "Type": "Forecast (AI)"
+})
+
+# Add a label to historical data
+daily_sales["Type"] = "Historical"
+
+# Combine past data and future predictions
+combined_df = pd.concat([daily_sales[["Date", "Total", "Type"]], forecast_df])
+
+# 4. Visualize the AI Forecast
+fig_forecast = px.line(
+    combined_df,
+    x="Date",
+    y="Total",
+    color="Type",
+    title="7-Day Revenue Forecast vs Historical Trend",
+    template="plotly_dark",
+    color_discrete_map={"Historical": "#3498db", "Forecast (AI)": "#e74c3c"}
+)
+
+fig_forecast.update_traces(line=dict(width=3))
+st.plotly_chart(fig_forecast, use_container_width=True)
+
+# 5. Business Insight
+st.success(f"📈 **Model Insight:** The Linear Regression model projects total revenue for the next 7 days to average around LKR {int(predictions.mean()):,} per day. Use this to optimize supply chain logistics.")
