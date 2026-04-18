@@ -123,4 +123,4 @@ fig_forecast.update_traces(line=dict(width=3))
 st.plotly_chart(fig_forecast, use_container_width=True)
 
 # 5. Business Insight
-st.success(f"📈 **Model Insight:** The Linear Regression model projects total revenue for the next 7 days to average around LKR {int(predictions.mean()):,} per day. Use this to optimize supply chain logistics.")
+st.success(f" **Model Insight:** The Linear Regression model projects total revenue for the next 7 days to average around LKR {int(predictions.mean()):,} per day. Use this to optimize supply chain logistics.")
