@@ -70,31 +70,31 @@ st.markdown("### Raw Data View")
 st.dataframe(df_selection)
 
 st.markdown("---")
-st.markdown("### 🤖 AI Demand Forecasting (Machine Learning)")
+st.markdown("### AI Demand Forecasting (Machine Learning)")
 
-# 1. Feature Engineering: Prepare Data for the ML Model
+# Prepare Data for ML Model
 df["Date"] = pd.to_datetime(df["Date"])
 daily_sales = df.groupby("Date")["Total"].sum().reset_index()
 
-# Create a 'Day Index' (e.g., 1, 2, 3...) to represent time passing
+#  Day Index - represent time passing
 daily_sales["Day_Index"] = np.arange(len(daily_sales))
 
 X = daily_sales[["Day_Index"]] # Features
-y = daily_sales["Total"]       # Target Variable
+y = daily_sales["Total"]       # Target Var
 
-# 2. Train the Machine Learning Model
+# Train ML Model
 model = LinearRegression()
 model.fit(X, y)
 
-# 3. Predict the Next 7 Days
+# Predict Next 7Days
 last_day_index = daily_sales["Day_Index"].max()
 last_date = daily_sales["Date"].max()
 
-# Create future data points
+#future data points
 future_days = pd.DataFrame({"Day_Index": np.arange(last_day_index + 1, last_day_index + 8)})
 predictions = model.predict(future_days)
 
-# Create a DataFrame for the predictions
+#DataFrame for predictions
 future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=7)
 forecast_df = pd.DataFrame({
     "Date": future_dates,
@@ -102,13 +102,13 @@ forecast_df = pd.DataFrame({
     "Type": "Forecast (AI)"
 })
 
-# Add a label to historical data
+#historical data
 daily_sales["Type"] = "Historical"
 
-# Combine past data and future predictions
+#past and future predictions
 combined_df = pd.concat([daily_sales[["Date", "Total", "Type"]], forecast_df])
 
-# 4. Visualize the AI Forecast
+#AI Forecast
 fig_forecast = px.line(
     combined_df,
     x="Date",
@@ -122,5 +122,5 @@ fig_forecast = px.line(
 fig_forecast.update_traces(line=dict(width=3))
 st.plotly_chart(fig_forecast, use_container_width=True)
 
-# 5. Business Insight
+#business insight
 st.success(f" **Model Insight:** The Linear Regression model projects total revenue for the next 7 days to average around LKR {int(predictions.mean()):,} per day. Use this to optimize supply chain logistics.")
