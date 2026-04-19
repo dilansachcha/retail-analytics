@@ -5,10 +5,12 @@ scikit-learn
 joblib
 SQLAlchemy
 psycopg2-binary
-pandasai
+pandasai==2.3.0
 python-dotenv
 matplotlib
 sqlglot
 google-generativeai
 pyyaml
 astor
+pydantic
+pydantic-settings
