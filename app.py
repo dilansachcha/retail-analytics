@@ -3,8 +3,9 @@ from sklearn.preprocessing import StandardScaler
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from sklearn.linear_model import LinearRegression # NEW
-import numpy as np # NEW
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import joblib
 
 #Config
 st.set_page_config(page_title="Retail Analytics", layout="wide")
@@ -129,21 +130,26 @@ st.success(f" **Model Insight:** The Linear Regression model projects total reve
 
 st.markdown("---")
 st.markdown("### AI Customer Segmentation (K-Means Clustering)")
-st.markdown("_Using Unsupervised Machine Learning to identify distinct purchasing personas._")
+st.markdown("_Using Decoupled Unsupervised ML to identify distinct purchasing personas._")
 
-# numeric features for clustering
+# Pre-Trained Model and Scaler
+@st.cache_resource
+def load_models():
+    loaded_kmeans = joblib.load("kmeans_model.pkl")
+    loaded_scaler = joblib.load("scaler.pkl")
+    return loaded_kmeans, loaded_scaler
+
+kmeans, scaler = load_models()
+
+# Prepare data
 features = ['Unit price', 'Quantity', 'Total', 'Rating']
 X_cluster = df[features]
 
-# scale data
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X_cluster)
+# Predict
+X_scaled = scaler.transform(X_cluster)
+df['Cluster'] = kmeans.predict(X_scaled)
 
-# Train K-Means Model
-kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
-df['Cluster'] = kmeans.fit_predict(X_scaled)
-
-# Map the mathematical clusters (based on standard retail patterns)
+# mathematical clusters to  labels
 segment_map = {
     0: "Budget/Routine Shoppers",
     1: "High-Spend Premium",
@@ -151,18 +157,18 @@ segment_map = {
 }
 df['Customer Segment'] = df['Cluster'].map(segment_map)
 
-# 5. Visualize clusters
+# Visualize the Clusters
 fig_cluster = px.scatter(
     df,
     x="Total",
     y="Rating",
     color="Customer Segment",
     title="Transaction Segmentation: Spend vs. Customer Satisfaction",
-    template="plotly_dark", #dark theme
+    template="plotly_dark",
     hover_data=["Product line", "Gender", "City"]
 )
 
 fig_cluster.update_traces(marker=dict(size=8, opacity=0.8))
 st.plotly_chart(fig_cluster, use_container_width=True)
 
-st.success("**Strategic Action:** The model identified three distinct shopper segments. 'High-Spend Premium' transactions correlate with specific product lines. This cluster can be targeted with loyalty program upgrades (Nexus) to increase retention.")
+st.success("**Strategic Action:** The model identified three distinct shopper segments. 'High-Spend Premium' transactions correlate with specific product lines. This cluster can be targeted with loyalty program (Nexus) upgrades to increase retention.")
