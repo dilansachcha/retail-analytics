@@ -3,3 +3,10 @@ pandas
 plotly
 scikit-learn
 joblib
+SQLAlchemy
+psycopg2-binary
+pandasai
+python-dotenv
+matplotlib
+sqlglot
+google-generativeai

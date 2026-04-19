@@ -1,11 +1,22 @@
+import ast
+import joblib
+import numpy as np
+import pandas as pd
+import streamlit as st
+import plotly.express as px
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-import streamlit as st
-import pandas as pd
-import plotly.express as px
 from sklearn.linear_model import LinearRegression
-import numpy as np
-import joblib
+
+# MONKEY PATCH FOR PYTHON 3.14 + ASTOR
+if not hasattr(ast, 'Str'):
+    ast.Str = ast.Constant
+    ast.Num = ast.Constant
+    ast.NameConstant = ast.Constant
+
+from pandasai import SmartDataframe
+from pandasai.llm import GoogleGemini
+import google.generativeai as genai
 
 #Config
 st.set_page_config(page_title="Retail Analytics", layout="wide")
@@ -13,9 +24,27 @@ st.title("Supermarket Sales Analytics Dashboard")
 st.markdown("_Dilan's Prototype built for retail demand analysis._")
 
 #Load Data
-@st.cache_data
+# @st.cache_data
+# def load_data():
+#     return pd.read_csv("supermarket_sales.csv")
+#
+# df = load_data()
+
+# Load Data - Neon Cloud DB
+@st.cache_data(ttl=600)  # Caches data for 10 minutes to optimize database hits
 def load_data():
-    return pd.read_csv("supermarket_sales.csv")
+    # DATABASE_URL from secrets
+    conn = st.connection("postgresql", type="sql", url=st.secrets["DATABASE_URL"])
+
+    df = conn.query("SELECT * FROM sales;")
+
+    # Map sql columns
+    df.columns = ['Invoice ID', 'Branch', 'City', 'Customer type', 'Gender',
+                  'Product line', 'Unit price', 'Quantity', 'Tax 5%', 'Total',
+                  'Date', 'Time', 'Payment', 'cogs', 'gross margin percentage',
+                  'gross income', 'Rating']
+    return df
+
 
 df = load_data()
 
@@ -54,7 +83,7 @@ with chart_col1:
         orientation="h",
         title="Revenue by Product Category"
     )
-    st.plotly_chart(fig_product, use_container_width=True)
+    st.plotly_chart(fig_product, width="stretch")
 
 with chart_col2:
     # Pie Chart
@@ -66,7 +95,7 @@ with chart_col2:
         title="Revenue by Payment Method",
         hole=0.4
     )
-    st.plotly_chart(fig_payment, use_container_width=True)
+    st.plotly_chart(fig_payment, width="stretch")
 
 #Raw Data Table
 st.markdown("### Raw Data View")
@@ -123,7 +152,7 @@ fig_forecast = px.line(
 )
 
 fig_forecast.update_traces(line=dict(width=3))
-st.plotly_chart(fig_forecast, use_container_width=True)
+st.plotly_chart(fig_forecast, width="stretch")
 
 #business insight
 st.success(f" **Model Insight:** The Linear Regression model projects total revenue for the next 7 days to average around LKR {int(predictions.mean()):,} per day. This can be used to optimize supply chain logistics.")
@@ -169,6 +198,33 @@ fig_cluster = px.scatter(
 )
 
 fig_cluster.update_traces(marker=dict(size=8, opacity=0.8))
-st.plotly_chart(fig_cluster, use_container_width=True)
+st.plotly_chart(fig_cluster, width="stretch")
 
 st.success("**Strategic Action:** The model identified three distinct shopper segments. 'High-Spend Premium' transactions correlate with specific product lines. This cluster can be targeted with loyalty program (Nexus) upgrades to increase retention.")
+
+st.markdown("---")
+st.markdown("### GenAI Data Assistant (PandasAI & Gemini)")
+st.markdown("_Ask questions about the retail data in plain English._")
+
+# Initialize Gemini LLM
+api_key = st.secrets["GEMINI_API_KEY"]
+llm = GoogleGemini(api_key=api_key)
+
+# Google core library overwriting PandasAI engine
+import google.generativeai as genai
+llm.google_gemini = genai.GenerativeModel('gemini-2.5-flash')
+
+# Convert to AI DataFrame
+sdf = SmartDataframe(df, config={"llm": llm})
+
+# ui
+st.markdown("> **Try asking:** _'Which branch has the highest average rating?'_ or _'What is the most popular payment method?'_")
+user_question = st.text_input("What would you like to know about the sales data?")
+
+if user_question:
+    with st.spinner("Gemini is analyzing the database..."):
+        try:
+            answer = sdf.chat(user_question)
+            st.success(answer)
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
