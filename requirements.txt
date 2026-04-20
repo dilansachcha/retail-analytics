@@ -8,4 +8,6 @@ psycopg2-binary
 pandasai
 google-generativeai
 astor
+pydantic
 pydantic-settings
+matplotlib
