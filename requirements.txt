@@ -10,3 +10,4 @@ pandasai==2.2.1
 google-generativeai
 astor
 pydantic-settings
+pyyaml
