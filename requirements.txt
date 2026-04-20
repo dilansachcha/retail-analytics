@@ -5,9 +5,7 @@ scikit-learn
 joblib
 SQLAlchemy
 psycopg2-binary
-pandasai
+pandasai<3.0.0
 google-generativeai
 astor
-pydantic
 pydantic-settings
-matplotlib
