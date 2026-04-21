@@ -45,7 +45,7 @@ If you wish to run this project locally, you will need to set up your own databa
    streamlit run app.py
    ```
 
-## ⚙️ Production Configuration
+## Production Configuration
 
 * **Dependency Management:** The production environment utilizes strict version pinning (`pandasai==2.2.1`, `numpy<2.0.0`) to ensure binary compatibility between legacy ML libraries and modern cloud Linux environments.
 * **Python Compatibility:** Implemented custom monkey patches (`ast.Str = ast.Constant`) to bridge PandasAI execution with cutting-edge Python 3.14 AST deprecations.
